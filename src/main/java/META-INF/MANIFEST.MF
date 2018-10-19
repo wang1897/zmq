@@ -1,0 +1,32 @@
+Manifest-Version: 1.0
+Class-Path: android-fork-bitcoinj-1.0.12.jar log4j-over-slf4j-1.7.25.j
+ ar spring-data-jpa-1.11.6.RELEASE.jar spring-orm-4.3.10.RELEASE.jar j
+ cl-over-slf4j-1.7.25.jar spring-boot-starter-web-1.5.6.RELEASE.jar gs
+ on-2.7.jar spring-aop-4.3.10.RELEASE.jar core-1.51.0.0.jar spring-cor
+ e-4.3.10.RELEASE.jar spring-data-commons-1.13.6.RELEASE.jar spring-bo
+ ot-autoconfigure-1.5.6.RELEASE.jar spring-boot-starter-1.5.6.RELEASE.
+ jar jackson-databind-2.8.9.jar spring-web-4.3.10.RELEASE.jar okhttp-2
+ .7.2.jar scrypt-1.4.0.jar orchid-1.2.1.jar spring-boot-1.5.6.RELEASE.
+ jar spring-boot-starter-tomcat-1.5.6.RELEASE.jar validation-api-1.1.0
+ .Final.jar spring-boot-starter-jdbc-1.5.6.RELEASE.jar slf4j-api-1.7.2
+ 5.jar commons-codec-1.10.jar protobuf-java-2.6.1.jar snakeyaml-1.17.j
+ ar hibernate-commons-annotations-5.0.1.Final.jar spring-aspects-4.3.1
+ 0.RELEASE.jar jnacl-0.1.0.jar spring-context-4.3.10.RELEASE.jar tomca
+ t-embed-el-8.5.16.jar spring-tx-4.3.10.RELEASE.jar jul-to-slf4j-1.7.2
+ 5.jar spring-webmvc-4.3.10.RELEASE.jar jackson-annotations-2.8.0.jar 
+ spring-jdbc-4.3.10.RELEASE.jar logback-core-1.1.11.jar hibernate-jpa-
+ 2.1-api-1.0.0.Final.jar bitcoinj-core-1.0.12.jar spring-boot-starter-
+ data-jpa-1.5.6.RELEASE.jar javassist-3.21.0-GA.jar jcip-annotations-1
+ .0.jar guava-18.0.jar jeromq-0.4.2.jar classmate-1.3.3.jar spring-boo
+ t-starter-aop-1.5.6.RELEASE.jar antlr-2.7.7.jar tomcat-juli-8.5.16.ja
+ r spring-expression-4.3.10.RELEASE.jar tomcat-embed-core-8.5.16.jar h
+ ibernate-entitymanager-5.0.12.Final.jar httpcore-4.4.8.jar spring-bea
+ ns-4.3.10.RELEASE.jar httpclient-4.5.2.jar tomcat-embed-websocket-8.5
+ .16.jar javax.transaction-api-1.2.jar jboss-logging-3.3.1.Final.jar j
+ ackson-core-2.8.9.jar aspectjweaver-1.8.10.jar spring-boot-starter-lo
+ gging-1.5.6.RELEASE.jar okio-1.6.0.jar dom4j-1.6.1.jar jsr305-2.0.1.j
+ ar logback-classic-1.1.11.jar hibernate-validator-5.3.5.Final.jar hib
+ ernate-core-5.0.12.Final.jar mysql-connector-java-5.1.38.jar jandex-2
+ .0.0.Final.jar tomcat-jdbc-8.5.16.jar
+Main-Class: com.aethercoder.Request
+
