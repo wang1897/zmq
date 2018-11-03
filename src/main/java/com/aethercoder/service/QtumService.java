@@ -1,6 +1,5 @@
 package com.aethercoder.service;
 
-import com.aethercoder.dao.AddressInfoDao;
 import com.aethercoder.dao.AddressTxDao;
 import com.aethercoder.dao.BlockInfoDao;
 import com.aethercoder.dao.TransactionDao;
@@ -15,10 +14,8 @@ import com.aethercoder.vo.TransactionVO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.sun.tools.internal.xjc.reader.dtd.bindinfo.BIAttribute;
 import org.apache.tomcat.util.buf.HexUtils;
 import org.bitcoinj.core.Address;
-import org.bitcoinj.core.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
