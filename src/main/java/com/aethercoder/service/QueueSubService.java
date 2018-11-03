@@ -63,7 +63,7 @@ public class QueueSubService implements Runnable {
                 List<AddressInfo> addressInfoList = new ArrayList<AddressInfo>();
                 List<TxInfo> txList = new ArrayList<TxInfo>();
                 List<String> transList = (List<String>) blockDetail.get("tx");
-                Map<String, Double> txFeeMap = new HashMap<String, Double>();
+                Map<String, BigDecimal> txFeeMap = new HashMap<>();
                 for (String txHash : transList) {
 
                     //生成地址信息和交易信息
@@ -103,9 +103,9 @@ public class QueueSubService implements Runnable {
         }
     }
 
-    private BlockInfo generateBlockInfo(Map blockDetail, Double blockAward, String blockHash, Integer txCount){
+    private BlockInfo generateBlockInfo(Map blockDetail, BigDecimal blockAward, String blockHash, Integer txCount){
         BlockInfo block = qtumService.blockDetailToBlock(blockDetail);
-        block.setBlockAward(BigDecimal.valueOf(blockAward));
+        block.setBlockAward(blockAward);
         block.setBlockHash(blockHash);
         block.setBlockMerkle((String)blockDetail.get("merkleroot"));
         block.setBlockMiner((String) blockDetail.get("miner"));

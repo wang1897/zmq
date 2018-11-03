@@ -1,17 +1,16 @@
 package com.aethercoder.dao.impl;
 
 import com.aethercoder.entity.TokenInfo;
-import com.aethercoder.entity.TxInfo;
-import com.aethercoder.util.DateUtil;
+import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Repository
 public class TokenInfoDaoImpl {
     @PersistenceContext
     private EntityManager entityManager;

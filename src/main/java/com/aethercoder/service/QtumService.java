@@ -28,6 +28,8 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static com.aethercoder.constants.Constants.QBE_SYMBOL;
+
 /**
  * Created by hepengfei on 23/01/2018.
  */
@@ -200,7 +202,7 @@ public class QtumService {
                                          List<AddressInfo> addressInfoList,
                                          List<TxInfo> txInfos,
                                          Integer height,
-                                         Map<String, Double> txFeeMap) throws Exception{
+                                         Map<String, BigDecimal> txFeeMap) throws Exception{
         Map transDetail = getTransDetail(txid);
         List<Map> vin = (List)transDetail.get("vin");
 
@@ -209,7 +211,7 @@ public class QtumService {
         List<Map> txVin = new ArrayList<>();
         List<Map> txVout = new ArrayList<>();
         boolean isBaseFlag = false;
-        Double txFee = 0d;
+        BigDecimal txFee = new BigDecimal(0);
 
         // 处理交易输入（挖矿交易、合约输入）
         for (Map map: vin){
@@ -237,21 +239,21 @@ public class QtumService {
                         address = (String) ((List)scriptPubKeyMap.get("addresses")).get(0);
                     }
 
-                    txFee += (Double)vinTxMapPer.get("value");
+                    txFee = txFee.add(new BigDecimal(vinTxMapPer.get("value").toString()));
                     if (addressValueMap.containsKey(address)){
                         AddressInfo addressInfo = addressValueMap.get(address);
-                        addressInfo.setBalance_change(addressInfo.getBalance_change().add(BigDecimal.valueOf(0 - (double)vinTxMapPer.get("value"))));
+                        addressInfo.setBalance_change(addressInfo.getBalance_change().subtract(new BigDecimal(vinTxMapPer.get("value").toString())));
                     }
                     else{
                         //生成输入地址的信息
                         AddressInfo addressInfo = generateAddressInfo(addressInfoList,
-                                                                      address,
-                                                                      new BigDecimal(0d - (double)vinTxMapPer.get("value")),
-                                                                      txid,
-                                                                      (Integer)transDetail.get("time"),
-                                                                      height,
-                                                                     "QTC",
-                                                                     null);
+                                address,
+                                new BigDecimal(vinTxMapPer.get("value").toString()).negate(),
+                                txid,
+                                (Integer) transDetail.get("time"),
+                                height,
+                                QBE_SYMBOL,
+                                null);
 
                         addressValueMap.put(address, addressInfo);
                     }
@@ -265,21 +267,21 @@ public class QtumService {
         }
 
         // 处理交易输出
-        handleVoutMap(txFee, transDetail, height, txVout, isBaseFlag, addressInfoList, txFeeMap, addressValueMap);
+        txFee = handleVoutMap(txFee, transDetail, height, txVout, isBaseFlag, addressInfoList, txFeeMap, addressValueMap);
 
         txFee = isBaseFlag ? txFeeMap.get("blockFee") : txFee;
 
         // 生成transaction信息
-        generateTxInfo(transDetail, txInfos, BigDecimal.valueOf(txFee), gson.toJson(txVin), gson.toJson(txVout), vin.size(), ((List)transDetail.get("vout")).size(), height);
+        generateTxInfo(transDetail, txInfos, txFee, gson.toJson(txVin), gson.toJson(txVout), vin.size(), ((List)transDetail.get("vout")).size(), height);
     }
 
-    private Double handleVoutMap(Double txFee,
+    private BigDecimal handleVoutMap(BigDecimal txFee,
                                  Map transDetail,
                                  Integer height,
                                  List<Map> txVout,
                                  boolean isBaseFlag,
                                  List<AddressInfo> addressInfoList,
-                                 Map<String, Double> txFeeMap,
+                                 Map<String, BigDecimal> txFeeMap,
                                  Map<String, AddressInfo> addressValueMap) throws Exception{
         List<Map> vout = (List)transDetail.get("vout");
 
@@ -328,10 +330,10 @@ public class QtumService {
 
             // 如果是挖矿交易，则输出序号为0的value则为区块奖励
             if(isBaseFlag && 0 == (Integer)map.get("n")){
-                txFeeMap.put("blockFee", (double)map.get("value"));
+                txFeeMap.put("blockFee", new BigDecimal(map.get("value").toString()));
             }
             else if(isBaseFlag && 0 != (Integer)map.get("n")){
-                txFeeMap.put(address, (double)map.get("value"));
+                txFeeMap.put(address, new BigDecimal(map.get("value").toString()));
             }
 
             //如果输出地址不在输入列表里面，则为新的地址生成余额变动信息
@@ -346,15 +348,17 @@ public class QtumService {
                         (String) transDetail.get("txid"),
                         (Integer)transDetail.get("time"),
                         height,
-                        "QTC",
+                        QBE_SYMBOL,
                         null);
             }
 
             // 生成交易的VoutMap
-            setVinAndVout(address, new BigDecimal((double)map.get("value")), "QTC", scriptPubKey, txVout);
+            setVinAndVout(address, new BigDecimal((double)map.get("value")), QBE_SYMBOL, scriptPubKey, txVout);
 
             // 计算交易的手续费时 扣除 花费返回部分
-            txFee -= (double)map.get("value") + (txFeeMap.get(address) == null ? 0 : txFeeMap.get(address));
+            BigDecimal addressFee = txFeeMap.get(address) == null ? new BigDecimal(0) : txFeeMap.get(address);
+            txFee = txFee.subtract(new BigDecimal(map.get("value").toString()).add(addressFee));
+//            txFee -= (double)map.get("value") + (txFeeMap.get(address) == null ? 0 : txFeeMap.get(address));
         }
 
         return txFee;

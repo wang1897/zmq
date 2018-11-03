@@ -1,10 +1,7 @@
 package com.aethercoder.dao.impl;
 
-import com.aethercoder.entity.AddressInfo;
-import com.aethercoder.entity.BlockInfo;
-import com.aethercoder.entity.TxInfo;
 import com.aethercoder.util.DateUtil;
-import com.google.gson.Gson;
+import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -12,6 +9,7 @@ import javax.persistence.Query;
 import java.math.BigDecimal;
 import java.util.*;
 
+@Repository
 public class TxInfoDaoImpl {
     @PersistenceContext
     private EntityManager entityManager;

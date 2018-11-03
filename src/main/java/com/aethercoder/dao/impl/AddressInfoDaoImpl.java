@@ -1,9 +1,8 @@
 package com.aethercoder.dao.impl;
 
-import com.aethercoder.entity.BlockInfo;
-import com.aethercoder.entity.TxInfo;
 import com.aethercoder.util.DateUtil;
 import com.google.gson.Gson;
+import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -14,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Repository
 public class AddressInfoDaoImpl {
     @PersistenceContext
     private EntityManager entityManager;

@@ -34,8 +34,6 @@ public class Request implements CommandLineRunner {
     @Autowired
     private CmdService cmdService;
 
-//    private TokenLogService tokenLogService;
-//    @Autowired
 
     final private BlockingDeque<String> blockingDeque = new LinkedBlockingDeque<>();
 
@@ -45,27 +43,13 @@ public class Request implements CommandLineRunner {
 
     @Override
     public void run(String[] args) throws Exception {
-//        PID = cmdService.startQtum();
         zmqService.setBlockingDeque(blockingDeque);
         queueSubService.setBlockingDeque(blockingDeque);
         Thread producer = new Thread(zmqService);
         Thread consumer = new Thread(queueSubService);
-//        Thread tokenLog = new Thread(tokenLogService);
         producer.start();
         consumer.start();
-//        tokenLog.start();
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    cmdService.stopQtum(PID);
-                    System.exit(0);
-                } catch (IOException ioe) {
-                    logger.error("error stop qtumd.", ioe);
-                }
-            }
-        });
     }
 
 }
