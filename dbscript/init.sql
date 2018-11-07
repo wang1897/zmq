@@ -13,7 +13,6 @@ CREATE TABLE `d_qbao_chain_schema`.`t_block_info` (
   `block_txcount` int(8) DEFAULT NULL,
   `block_preblockhash` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique` (`block_hash`,`block_preblockhash`),
   KEY `index_block_hash` (`block_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -31,7 +30,6 @@ CREATE TABLE `d_qbao_chain_schema`.`t_tx_info` (
   `tx_fee` decimal(16,8) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `tx_id_UNIQUE` (`tx_id`),
-  KEY `index_time` (`time`),
   KEY `index_block_height` (`block_height`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -45,7 +43,8 @@ CREATE TABLE `d_qbao_chain_schema`.`t_address_info` (
     `token_address` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `time` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `index_tx_hash` (`tx_hash`)
+  KEY `index_tx_hash` (`tx_hash`),
+  KEY `index_address` (`address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 

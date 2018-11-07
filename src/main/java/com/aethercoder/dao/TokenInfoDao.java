@@ -13,9 +13,9 @@ import java.util.List;
  */
 @Repository
 public interface TokenInfoDao extends JpaRepository<TxInfo, Long> {
-    @Query(value = "select max(block_height) from tx_info", nativeQuery = true)
+    @Query(value = "select max(block_height) from t_tx_info", nativeQuery = true)
     Long findMaxBlockHeight();
 
-    @Query(value = "select DISTINCT(block_height) from tx_info ORDER BY block_height asc", nativeQuery = true)
+    @Query(value = "select DISTINCT(block_height) from t_tx_info ORDER BY block_height asc", nativeQuery = true)
     List<BigInteger> getAllBlockHeightFromDB();
 }

@@ -2,6 +2,8 @@ package com.aethercoder.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
@@ -32,8 +34,12 @@ public class SynBlockService implements Runnable  {
                 for(int i = min; i < blockHeight; i++){
                     if (i < count) {
                         Thread.sleep(5000);
-                        blockingDeque.put(qtumService.getBlockHash(Long.valueOf(i)));
-                        logger.info("synMissingBlock, remaining block size: " + blockingDeque.size());
+                        String missBlockHash = qtumService.getBlockHash(Long.valueOf(i));
+                        if (!blockingDeque.contains(missBlockHash)){
+                            blockingDeque.put(missBlockHash);
+                        }
+
+                        logger.info("SynBlockService synMissingBlock, remaining block size: " + blockingDeque.size());
                     }
                     else {
                         min = count + 1;
@@ -41,7 +47,6 @@ public class SynBlockService implements Runnable  {
                     }
                 }
             }
-
         }
         catch (Exception e) {
             e.printStackTrace();

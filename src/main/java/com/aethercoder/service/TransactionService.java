@@ -26,7 +26,6 @@ public class TransactionService {
     @Autowired
     private AddressInfoDao addressInfoDao;
 
-
     @Transactional
     public void save(BlockInfo block, List<TxInfo> txInfos, List<AddressInfo> addressInfos) throws Exception {
         blockInfoDao.save(block);

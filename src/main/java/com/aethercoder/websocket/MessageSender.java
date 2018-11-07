@@ -42,7 +42,7 @@ public class MessageSender {
 
     }
 
-    @Scheduled(fixedRate = 50000)
+    @Scheduled(fixedRate = 5000)
     public void sendJoinGambleResultScheduled() {
 
         sendEventToClient(qtumService.getBlockAndTx());

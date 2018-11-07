@@ -16,7 +16,7 @@ public class TokenInfoDaoImpl {
     private EntityManager entityManager;
 
     public Map<String, TokenInfo> getTokenInfoMap() {
-        String hql = "select * from token_info ";
+        String hql = "select * from t_token_info ";
 
         Query query = entityManager.createNativeQuery(hql);
         List searchRes = query.getResultList();

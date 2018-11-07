@@ -15,7 +15,7 @@ public class TxInfoDaoImpl {
     private EntityManager entityManager;
 
     public Map getTxInfo(String txHash) {
-        String hql = "select * from tx_info where tx_id = :txHash";
+        String hql = "select * from t_tx_info where tx_id = :txHash";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setParameter("txHash", txHash);
@@ -39,7 +39,7 @@ public class TxInfoDaoImpl {
     }
 
     public List<Map> findByLatestTxInfos(Integer limit, Integer offset){
-        String hql = "select * from tx_info order by time desc ";
+        String hql = "select * from t_tx_info order by time desc ";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setMaxResults(limit);

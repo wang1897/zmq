@@ -21,7 +21,7 @@ public class BlockInfoDaoImpl {
     private EntityManager entityManager;
 
     public List<Map> findByLatestBlockInfos(Integer limit, Integer offset) {
-        String hql = "select * from block_info order by block_height desc";
+        String hql = "select * from t_block_info order by block_height desc";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setFirstResult(offset);
@@ -48,7 +48,7 @@ public class BlockInfoDaoImpl {
     }
 
     public Map findByBlockHeight(Integer blockHeight) {
-        String hql = "select * from block_info where block_height = :blockHeight  order by block_height desc";
+        String hql = "select * from t_block_info where block_height = :blockHeight  order by block_height desc";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setParameter("blockHeight", blockHeight);
@@ -58,7 +58,7 @@ public class BlockInfoDaoImpl {
     }
 
     public Map findByBlockHash(String blockHash) {
-        String hql = "select * from block_info where block_hash = :blockHash  order by block_height desc";
+        String hql = "select * from t_block_info where block_hash = :blockHash  order by block_height desc";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setParameter("blockHash", blockHash);

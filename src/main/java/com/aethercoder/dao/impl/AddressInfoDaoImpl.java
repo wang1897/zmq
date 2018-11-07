@@ -19,7 +19,7 @@ public class AddressInfoDaoImpl {
     private EntityManager entityManager;
 
     public String getAddressInfo(String address, Integer limit, Integer offset) {
-        String hql = "select * from address_info where address = :address order by block_height desc";
+        String hql = "select * from t_address_info where address = :address order by block_height desc";
 
         Query query = entityManager.createNativeQuery(hql);
         query.setParameter("address", address);
@@ -46,7 +46,7 @@ public class AddressInfoDaoImpl {
         resultMap.put("inBalance", inBalance);
         resultMap.put("outBalance", outBalance);
 
-        hql = "select * from tx_info where tx_id in (select distinct tx_hash from address_info where address = :address) order by block_height desc";
+        hql = "select * from t_tx_info where tx_id in (select distinct tx_hash from t_address_info where address = :address) order by block_height desc";
         query = entityManager.createNativeQuery(hql);
         query.setParameter("address", address);
         query.setFirstResult(offset);

@@ -1,15 +1,11 @@
 package com.aethercoder.service;
 
-import com.aethercoder.entity.AddressInfo;
-import com.aethercoder.entity.BlockInfo;
-import com.aethercoder.entity.TxInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -24,10 +20,10 @@ public class QueueSubService implements Runnable {
     private Logger logger = LoggerFactory.getLogger(QueueSubService.class);
 
     @Autowired
-    private TransactionService transactionService;
+    private QtumService qtumService;
 
     @Autowired
-    private QtumService qtumService;
+    private TransactionService transactionService;
 
     @Value("${qtum.zmq}")
     private String zmqUrl;
@@ -50,61 +46,28 @@ public class QueueSubService implements Runnable {
         String blockHash = null;
         try {
             int blocks = 999;
+            // 采用多线程处理每个区块，每个线程数据独立无交互
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 15, 200, TimeUnit.MILLISECONDS,
+                    new ArrayBlockingQueue<Runnable>(20));
+
             while (!Thread.currentThread().isInterrupted()) {
-
-
                 blockHash = blockingDeque.take();
-                logger.info("blockHash: " + blockHash);
+
                 Map blockDetail = qtumService.getBlockDetail(blockHash);
+                executor.execute(new BlockDataService(qtumService, transactionService, blockHash, blockDetail));
+
+                //同步丢失的区块,启动初始或者每同步处理1000个区块，启动单个线程去检查是否存在缺失的区块
                 blocks++;
-
-                List<AddressInfo> addressInfoList = new ArrayList<AddressInfo>();
-                List<TxInfo> txList = new ArrayList<TxInfo>();
-                List<String> transList = (List<String>) blockDetail.get("tx");
-                Map<String, BigDecimal> txFeeMap = new HashMap<>();
-                for (String txHash : transList) {
-
-                    //生成地址信息和交易信息
-                    qtumService.generateAddressAndTxInfo(txHash,
-                            addressInfoList,
-                            txList,
-                            (Integer) blockDetail.get("height"),
-                            txFeeMap);
-
+                if (blocks % 1000 == 0){
+                    executor.execute(new SynBlockService(qtumService, blockingDeque, (Integer) blockDetail.get("height")));
                 }
 
-                BlockInfo block = generateBlockInfo(blockDetail, txFeeMap.get("blockFee"), blockHash, transList.size());
-                transactionService.save(block, txList, addressInfoList);
-
-                //同步丢失的区块
-                if (blocks % 100 == 0){
-                    ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 10, 200, TimeUnit.MILLISECONDS,
-                            new ArrayBlockingQueue<Runnable>(20));
-                    executor.execute(new SynBlockService(qtumService, blockingDeque, block.getBlockHeight()));
-                }
-
-                logger.info("remaining block size: " + blockingDeque.size());
+                logger.info("QueueSubService remaining block size: " + blockingDeque.size());
             }
         }
         catch (Exception e) {
             e.printStackTrace();
-            logger.error(blockHash + " " + e.getMessage(), e);
+            logger.error("QueueSubService current blockHash: " + blockHash + " " + e.getMessage(), e);
         }
-    }
-
-    private BlockInfo generateBlockInfo(Map blockDetail, BigDecimal blockAward, String blockHash, Integer txCount){
-        BlockInfo block = qtumService.blockDetailToBlock(blockDetail);
-        block.setBlockAward(blockAward);
-        block.setBlockHash(blockHash);
-        block.setBlockMerkle((String)blockDetail.get("merkleroot"));
-        block.setBlockMiner((String) blockDetail.get("miner"));
-        block.setBlockSize((Integer) blockDetail.get("size"));
-        block.setBlockTime(new Date(new Long((Integer)blockDetail.get("time")) * 1000));
-        block.setBlockTxcount(txCount);
-        block.setBlockWeight((Integer)blockDetail.get("weight"));
-        block.setBlockHeight((Integer)blockDetail.get("height"));
-        block.setBlockPreblockhash((String)blockDetail.get("previousblockhash"));
-
-        return block;
     }
 }

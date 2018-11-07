@@ -13,9 +13,9 @@ import java.util.List;
 @Repository
 public interface BlockInfoDao extends JpaRepository<BlockInfo, Long>{
 
-    @Query(value = "select max(block_height) from block_info", nativeQuery = true)
+    @Query(value = "select max(block_height) from t_block_info", nativeQuery = true)
     Long findMaxBlockHeight();
 
-    @Query(value = "select DISTINCT(block_height) from block_info ORDER BY block_height asc", nativeQuery = true)
+    @Query(value = "select DISTINCT(block_height) from t_block_info ORDER BY block_height asc", nativeQuery = true)
     List<Integer> getAllBlockHeightFromDB();
 }
