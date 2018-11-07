@@ -10,7 +10,7 @@ import java.util.Date;
  * Created by king on 11/09/2018.
  */
 @Entity
-@Table(name = "address_info")
+@Table(name = "t_address_info")
 public class AddressInfo extends BaseEntity {
     @Column(name = "address")
     private String address;

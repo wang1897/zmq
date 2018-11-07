@@ -1,7 +1,5 @@
 package com.aethercoder.entity;
 
-import org.hibernate.annotations.Type;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -12,7 +10,7 @@ import java.util.Date;
  * Created by king on 11/09/2018.
  */
 @Entity
-@Table(name = "block_info")
+@Table(name = "t_block_info")
 public class BlockInfo extends BaseEntity{
     @Column(name = "block_hash")
     private String blockHash;

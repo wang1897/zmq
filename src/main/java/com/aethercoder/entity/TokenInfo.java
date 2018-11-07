@@ -1,19 +1,15 @@
 package com.aethercoder.entity;
 
-import org.hibernate.annotations.Type;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import java.math.BigDecimal;
-import java.util.Date;
 
 
 /**
  * Created by king on 11/09/2018.
  */
 @Entity
-@Table(name = "token_info")
+@Table(name = "t_token_info")
 public class TokenInfo extends BaseEntity {
     @Column(name = "symbol")
     private String symbol;

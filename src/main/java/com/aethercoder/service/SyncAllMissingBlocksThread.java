@@ -1,7 +1,5 @@
 package com.aethercoder.service;
 
-import com.aethercoder.service.QtumService;
-
 public class SyncAllMissingBlocksThread implements Runnable {
 
     private QtumService qtumService;
@@ -16,7 +14,7 @@ public class SyncAllMissingBlocksThread implements Runnable {
     @Override
     public void run(){
         try{
-            qtumService.getAllBlockHeightFromDB();
+//            qtumService.getAllBlockHeightFromDB();
         }
         catch (Exception e){
             e.printStackTrace();

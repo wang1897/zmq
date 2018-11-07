@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.zeromq.ZMQ;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 
@@ -22,22 +21,12 @@ public class ZMQSubService implements Runnable{
     private Logger logger = LoggerFactory.getLogger(ZMQSubService.class);
 
     @Autowired
-    private TransactionService transactionService;
-
-    @Autowired
-    private QtumService qtumService;
-
-    @Autowired
     private CmdService cmdService;
 
     @Value("${qtum.zmq}")
     private String zmqUrl;
 
     private BlockingDeque<String> blockingDeque;
-
-    public BlockingDeque<String> getBlockingDeque() {
-        return blockingDeque;
-    }
 
     public void setBlockingDeque(BlockingDeque<String> blockingDeque) {
         this.blockingDeque = blockingDeque;

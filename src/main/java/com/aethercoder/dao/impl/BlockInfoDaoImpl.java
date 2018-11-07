@@ -1,7 +1,5 @@
 package com.aethercoder.dao.impl;
 
-import com.aethercoder.entity.BlockInfo;
-import com.aethercoder.entity.Transaction;
 import com.aethercoder.util.DateUtil;
 import org.springframework.stereotype.Repository;
 

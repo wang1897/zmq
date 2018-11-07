@@ -1,21 +1,19 @@
 package com.aethercoder.service;
 
-import com.aethercoder.dao.AddressTxDao;
 import com.aethercoder.dao.BlockInfoDao;
-import com.aethercoder.dao.TransactionDao;
-import com.aethercoder.dao.impl.*;
-import com.aethercoder.entity.*;
+import com.aethercoder.dao.impl.AddressInfoDaoImpl;
+import com.aethercoder.dao.impl.BlockInfoDaoImpl;
+import com.aethercoder.dao.impl.TokenInfoDaoImpl;
+import com.aethercoder.dao.impl.TxInfoDaoImpl;
+import com.aethercoder.entity.AddressInfo;
+import com.aethercoder.entity.BlockInfo;
+import com.aethercoder.entity.TokenInfo;
+import com.aethercoder.entity.TxInfo;
 import com.aethercoder.util.BeanUtils;
-import com.aethercoder.util.CurrentNetParam;
 import com.aethercoder.util.NetworkUtil;
 import com.aethercoder.util.QtumUtils;
 import com.aethercoder.vo.TokenTransfer;
-import com.aethercoder.vo.TransactionVO;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import org.apache.tomcat.util.buf.HexUtils;
-import org.bitcoinj.core.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +22,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -53,18 +50,6 @@ public class QtumService {
     private String eventUrl;
 
     @Autowired
-    private TransactionService transactionService;
-
-    @Autowired
-    private TransactionDaoImpl transactionDaoImpl;
-
-    @Autowired
-    private AddressTxDao addressTxDao;
-
-    @Autowired
-    private TransactionDao transactionDao;
-
-    @Autowired
     private BlockInfoDaoImpl blockInfoDaoImpl;
 
     @Autowired
@@ -78,20 +63,6 @@ public class QtumService {
 
     @Autowired
     private TokenInfoDaoImpl tokenInfoDaoImpl;
-
-    public String getTransactionJson(String txid) throws JsonProcessingException {
-        Map map = new HashMap();
-        map.put("method", "getrawtransaction");
-
-        List<Object> params = new ArrayList<>();
-        params.add(txid);
-        params.add(1);
-        map.put("params", params);
-
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(map);
-        return json;
-    }
 
     public Integer getBlockCount() throws Exception{
         List<Map<String, Object>> paramList = new ArrayList<>();
@@ -145,43 +116,6 @@ public class QtumService {
 
         HashMap rawTraction = (HashMap)callQtumService("getblock", txidParamList);
         return rawTraction;
-    }
-
-    public void syncBlockByBlockHash(String blockHash) throws Exception{
-        HashMap blockMap = getBlock(blockHash);
-        if (blockMap == null || blockMap.isEmpty() || blockMap.get("tx") == null) {
-            return;
-        }
-
-        List<Transaction> transactions = new ArrayList<>();
-        List<AddressTx> addressTxList = new ArrayList<>();
-        List txIds = (List)blockMap.get("tx");
-        for (Object o : txIds) {
-            String txHash = (String)o;
-            Map transDetail = getTransDetail(txHash);
-
-            transactions.add(transferDetailToTransaction(transDetail,  (Integer) blockMap.get("height")));
-            transferDetailToAddressTx(transDetail, txHash, addressTxList);
-        }
-
-        transactionService.saveTrans(transactions, addressTxList);
-    }
-
-    public Transaction transferDetailToTransaction(Map transDetail, Integer blockHeight) {
-        Transaction transaction = new Transaction();
-        transaction.setTxId((String)transDetail.get("txid"));
-        transaction.setTxRaw((String)transDetail.get("hex"));
-        transaction.setSize((Integer)transDetail.get("size"));
-        transaction.setLocktime((Integer)transDetail.get("locktime"));
-        transaction.setBlockHeight(Long.valueOf(blockHeight));
-        if (transDetail.get("blockhash") != null) transaction.setBlockHash((String)transDetail.get("blockhash"));
-//        if (transDetail.get("height") != null) transaction.setBlockHeight(Long.valueOf(transDetail.get("height").toString()));
-        if (transDetail.get("time") != null) {
-            Integer timestamp = (Integer)transDetail.get("time");
-            Date date = new Date(new Long(timestamp) * 1000);
-            transaction.setTime(date);
-        }
-        return transaction;
     }
 
     public BlockInfo blockDetailToBlock(Map blockDetail){
@@ -339,12 +273,12 @@ public class QtumService {
             //如果输出地址不在输入列表里面，则为新的地址生成余额变动信息
             if (addressValueMap.containsKey(address)){
                 AddressInfo addressInfo = addressValueMap.get(address);
-                addressInfo.setBalance_change(addressInfo.getBalance_change().add(BigDecimal.valueOf((double)map.get("value"))));
+                addressInfo.setBalance_change(addressInfo.getBalance_change().add(new BigDecimal(map.get("value").toString())));
             }
             else{
                 generateAddressInfo(addressInfoList,
                         address,
-                        new BigDecimal((double)map.get("value")),
+                        new BigDecimal(map.get("value").toString()),
                         (String) transDetail.get("txid"),
                         (Integer)transDetail.get("time"),
                         height,
@@ -353,7 +287,7 @@ public class QtumService {
             }
 
             // 生成交易的VoutMap
-            setVinAndVout(address, new BigDecimal((double)map.get("value")), QBE_SYMBOL, scriptPubKey, txVout);
+            setVinAndVout(address, new BigDecimal(map.get("value").toString()), QBE_SYMBOL, scriptPubKey, txVout);
 
             // 计算交易的手续费时 扣除 花费返回部分
             BigDecimal addressFee = txFeeMap.get(address) == null ? new BigDecimal(0) : txFeeMap.get(address);
@@ -409,208 +343,9 @@ public class QtumService {
         return addressInfo;
     }
 
-    public void transferDetailToAddressTx(Map transDetail, String txid, List<AddressTx> addressTxList) {
-        List<Map> vin = (List)transDetail.get("vin");
-        List<Map> vout = (List)transDetail.get("vout");
-        String tokenAddress = null;
-        boolean isToken = false;
-        for (Map map: vout) {
-            AddressTx addressTx = new AddressTx();
-            boolean tempToken = transferVout(map, txid, addressTx);
-            if (tempToken) {
-                isToken = true;
-                tokenAddress = addressTx.getTokenAddr();
-            }
-            addressTxList.add(addressTx);
-        }
-        if (isToken) {
-            for (AddressTx addressTx : addressTxList) {
-                addressTx.setToken(true);
-            }
-        }
-        for (Map map: vin) {
-            AddressTx addressTx = new AddressTx();
-            if(map.get("coinbase") != null){
-                addressTx.setAddress("coinbase");
-                addressTx.setIndex(0);
-            }
-
-            if (isToken) {
-                addressTx.setToken(true);
-                addressTx.setTokenAddr(tokenAddress);
-            }
-            transferVin(map, txid, addressTx);
-            addressTxList.add(addressTx);
-        }
-    }
-
-    public void transferVin(Map vin, String txid, AddressTx addressTx) {
-        addressTx.setTxHash(txid);
-        if (vin.get("address") != null) {
-            addressTx.setAddress((String)vin.get("address"));
-        }
-        if (vin.get("value") != null) {
-            addressTx.setAmount(BigDecimal.valueOf((Double)vin.get("value")));
-        }
-        if (vin.get("txid") != null) {
-            addressTx.setSpentTxId((String)vin.get("txid"));
-        }
-        if (vin.get("vout") != null) {
-            addressTx.setIndex((Integer)vin.get("vout"));
-        }
-        Map scriptSig = (Map)vin.get("scriptSig");
-        if (scriptSig != null) {
-            if (scriptSig.get("asm") != null) {
-                addressTx.setAsm((String)scriptSig.get("asm"));
-            }
-            if (scriptSig.get("hex") != null) {
-                addressTx.setHex((String)scriptSig.get("hex"));
-            }
-        }
-        addressTx.setIn(true);
-    }
-
-    public boolean transferVout(Map vout, String txid, AddressTx addressTx) {
-        addressTx.setTxHash(txid);
-        boolean isToken = false;
-        TokenTransfer tokenTransfer = null;
-        if (vout.get("value") != null) {
-            addressTx.setAmount(BigDecimal.valueOf((Double)vout.get("value")));
-        }
-        if (vout.get("n") != null) {
-            addressTx.setIndex((Integer)vout.get("n"));
-        }
-        if (vout.get("spentTxId") != null) {
-            addressTx.setSpentTxId((String)vout.get("spentTxId"));
-        }
-        if (vout.get("spentIndex") != null) {
-            addressTx.setSpentIndex((Integer)vout.get("spentIndex"));
-        }
-        if (vout.get("spentHeight") != null) {
-            addressTx.setSpentHeight(Long.valueOf(vout.get("spentHeight").toString()));
-        }
-        Map scriptPubKey = (Map)vout.get("scriptPubKey");
-        if (scriptPubKey != null) {
-            if (scriptPubKey.get("asm") != null) {
-                String asm = (String)scriptPubKey.get("asm");
-                addressTx.setAsm(asm);
-                String[] asmBody = asm.split(" ");
-                if (asmBody.length > 3) {
-                    String tokenRaw = asmBody[3];
-                    try {
-                        tokenTransfer = new TokenTransfer(tokenRaw);
-                        addressTx.setToken(true);
-                        addressTx.setAddress(tokenTransfer.getToAddress());
-                        addressTx.setTokenAmount(tokenTransfer.getValue().toString());
-                        isToken = true;
-                    } catch (RuntimeException e) {
-
-                    }
-                }
-            }
-            if (scriptPubKey.get("hex") != null) {
-                addressTx.setHex((String)scriptPubKey.get("hex"));
-            }
-            if (scriptPubKey.get("addresses") != null) {
-                List<String> addressList = (List<String>)scriptPubKey.get("addresses");
-                if (!addressList.isEmpty()) {
-                    if (isToken) {
-                        addressTx.setTokenAddr(addressList.get(0));
-                    } else {
-                        addressTx.setAddress(addressList.get(0));
-                    }
-                }
-            }
-        }
-        addressTx.setIn(false);
-        return isToken;
-    }
-
-//    public void syncUnconfimedTx() throws Exception{
-////        logger.info("start getUnconfirmedTx");
-//        List<Object> allList = transactionService.getUnconfirmedTx();
-////        logger.info("end getUnconfirmedTx");
-//        if (allList.isEmpty()) {
-//            return;
-//        }
-//        List<Transaction> txList = (List<Transaction>)allList.get(0);
-//        Map<String, List<AddressTx>> map = (Map)allList.get(1);
-//
-//        if (txList == null | txList.isEmpty()) {
-//            return;
-//        }
-//        for (Transaction transaction: txList) {
-//            try {
-////                logger.info("start getTransDetail");
-//                Map txDetail = getTransDetail(transaction.getTxId());
-////                logger.info("end getTransDetail");
-//                if (txDetail.get("height") == null) {
-//                    continue;
-//                } else if (Long.valueOf(txDetail.get("height").toString()) == -1) {
-//                    List<AddressTx> pAddressTxList = map.get(transaction.getTxId());
-//                    transactionService.deleteTrans(transaction, pAddressTxList);
-//                    continue;
-//                }
-//
-//                Integer timestamp = (Integer) txDetail.get("time");
-//                Date date = new Date(new Long(timestamp) * 1000);
-//                transaction.setTime(date);
-//
-//                if (txDetail.get("blockhash") != null) transaction.setBlockHash((String) txDetail.get("blockhash"));
-//                if (txDetail.get("height") != null)
-//                    transaction.setBlockHeight(Long.valueOf(txDetail.get("height").toString()));
-//
-//                List<AddressTx> pAddressTxList = map.get(transaction.getTxId());
-//                List<AddressTx> addressTxList = transferDetailToAddressTx(txDetail, transaction.getTxId());
-//                for (AddressTx pAddressTx : pAddressTxList) {
-//                    int i = addressTxList.indexOf(pAddressTx);
-//                    if (i >= 0) {
-//                        AddressTx addressTx = addressTxList.get(i);
-//                        pAddressTx.setSpentTxId(addressTx.getSpentTxId());
-//                        pAddressTx.setSpentHeight(addressTx.getSpentHeight());
-//                        pAddressTx.setSpentIndex(addressTx.getSpentIndex());
-//                    }
-//                }
-//                transactionService.saveTrans(transaction, pAddressTxList);
-//            } catch (Exception e) {
-//                logger.error("Batch error " + transaction.getTxId() + " " + e.getMessage(), e);
-//            }
-//        }
-//    }
 
     public Map getInfo() throws Exception{
         return (Map)callQtumService("getinfo", null);
-    }
-
-    public Long getMaxBlockHeightFromDB() {
-        return transactionDao.findMaxBlockHeight();
-    }
-
-    public void getAllBlockHeightFromDB() throws Exception{
-        List<BigInteger> blockHeightList = transactionDao.getAllBlockHeightFromDB();
-
-        List<Integer> missingBlockCount = new ArrayList<Integer>();
-        int currentCount = 0;
-        for (int i = 0; i < blockHeightList.size(); i++){
-            int n = Integer.valueOf(blockHeightList.get(i).toString());
-            if (n == 0 || n == 1){
-                currentCount++;
-                continue;
-            }
-
-            for(int j = currentCount; j< n ; j++){
-                missingBlockCount.add(j);
-            }
-            currentCount = n + 1;
-        }
-
-        for (Integer n: missingBlockCount) {
-            String blockHash = getBlockHash(Long.valueOf(n + 1));
-            if (blockHash != null) {
-                Thread.sleep(8000);
-                syncBlockByBlockHash(blockHash);
-            }
-        }
     }
 
     public Double getSubsidy() throws Exception{
@@ -637,56 +372,6 @@ public class QtumService {
         return result.get("result");
     }
 
-    public List<TransactionVO> getTransactionByAddresses(List<String> addressList, String contractAddress, Long startBlock, Long endBlock , Integer offset,
-                                                         Integer limit) throws Exception{
-//        Map chainInfo = getInfo();
-//        Long blocks = Long.valueOf(chainInfo.get("blocks").toString());
-        Long blocks = transactionDao.findMaxBlockHeight();
-        if (contractAddress != null) {
-            Address address = new Address(CurrentNetParam.get(), HexUtils.fromHexString(contractAddress));
-            contractAddress = address.toBase58();
-        }
-        List<Transaction> transactionList = transactionDaoImpl.findByAddress(addressList, contractAddress, startBlock, endBlock, offset, limit);
-        List<TransactionVO> transactionVOList = new ArrayList<>();
-        for (Transaction transaction: transactionList) {
-            List<AddressTx> addressTxList = addressTxDao.findByTxHash(transaction.getTxId());
-
-            TransactionVO transactionVO = new TransactionVO(blocks);
-            BeanUtils.copyProperties(transaction, transactionVO);
-
-            transactionVO.convertAddressTx(addressTxList);
-
-            List<String> uniqueList = new ArrayList<String>();
-            for (AddressTx addressTx: addressTxList) {
-                if (!addressTx.getIn())
-                    continue;
-
-                if (addressTx.getAddress() != null && !uniqueList.contains(addressTx.getSpentTxId() + "_" + addressTx.getIndex())){
-                    transactionVO.getInList().add(addressTx);
-                    uniqueList.add(addressTx.getSpentTxId() + "_" + addressTx.getIndex());
-                    continue;
-                }
-
-                if (addressTx.getSpentTxId() != null){
-                    List<AddressTx> spendTxList = addressTxDao.findByTxHash(addressTx.getSpentTxId());
-
-                    for (AddressTx spendTx: spendTxList) {
-                        if (!spendTx.getIn() && addressTx.getIndex() == spendTx.getIndex() && !uniqueList.contains(addressTx.getSpentTxId() + "_" + addressTx.getIndex())){
-                            AddressTx addressTxIn = new AddressTx();
-                            BeanUtils.copyProperties(addressTx, addressTxIn);
-                            addressTxIn.setAddress(spendTx.getAddress());
-                            addressTxIn.setAmount(spendTx.getAmount());
-                            transactionVO.getInList().add(addressTxIn);
-                            uniqueList.add(addressTx.getSpentTxId() + "_" + addressTx.getIndex());
-                        }
-                    }
-                }
-            }
-
-            transactionVOList.add(transactionVO);
-        }
-        return transactionVOList;
-    }
 
     public boolean isInteger(String str) {
         Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");

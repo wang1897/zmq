@@ -1,18 +1,9 @@
 package com.aethercoder.service;
 
-import com.aethercoder.entity.AddressInfo;
-import com.aethercoder.entity.BlockInfo;
-import com.aethercoder.entity.TokenInfo;
-import com.aethercoder.entity.TxInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 
 public class SynBlockService implements Runnable  {

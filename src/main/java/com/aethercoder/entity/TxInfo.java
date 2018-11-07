@@ -12,7 +12,7 @@ import java.util.Date;
  * Created by king on 11/09/2018.
  */
 @Entity
-@Table(name = "tx_info")
+@Table(name = "t_tx_info")
 public class TxInfo extends BaseEntity {
     @Column(name = "tx_id")
     private String txId;

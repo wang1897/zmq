@@ -1,7 +1,8 @@
 package com.aethercoder.service;
 
-import com.aethercoder.entity.*;
-import jdk.nashorn.internal.parser.Token;
+import com.aethercoder.entity.AddressInfo;
+import com.aethercoder.entity.BlockInfo;
+import com.aethercoder.entity.TxInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,9 +58,6 @@ public class QueueSubService implements Runnable {
                 Map blockDetail = qtumService.getBlockDetail(blockHash);
                 blocks++;
 
-                List<Transaction> transactions = new ArrayList<>();
-                List<AddressTx> addressTxList = new ArrayList<>();
-
                 List<AddressInfo> addressInfoList = new ArrayList<AddressInfo>();
                 List<TxInfo> txList = new ArrayList<TxInfo>();
                 List<String> transList = (List<String>) blockDetail.get("tx");
@@ -68,21 +66,12 @@ public class QueueSubService implements Runnable {
 
                     //生成地址信息和交易信息
                     qtumService.generateAddressAndTxInfo(txHash,
-                                                         addressInfoList,
-                                                         txList,
-                                                         (Integer)blockDetail.get("height"),
-                                                         txFeeMap);
+                            addressInfoList,
+                            txList,
+                            (Integer) blockDetail.get("height"),
+                            txFeeMap);
 
-                    // address_tx和transaction表
-                    Map transDetail = qtumService.getTransDetail(txHash);
-                    Transaction entityTrans = qtumService.transferDetailToTransaction(transDetail, (Integer) blockDetail.get("height"));
-                    qtumService.transferDetailToAddressTx(transDetail, txHash, addressTxList);
-
-                    transactions.add(entityTrans);
                 }
-
-
-                transactionService.saveTrans(transactions, addressTxList);
 
                 BlockInfo block = generateBlockInfo(blockDetail, txFeeMap.get("blockFee"), blockHash, transList.size());
                 transactionService.save(block, txList, addressInfoList);
