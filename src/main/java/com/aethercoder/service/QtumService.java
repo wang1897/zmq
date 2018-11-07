@@ -1,18 +1,14 @@
 package com.aethercoder.service;
 
 import com.aethercoder.dao.BlockInfoDao;
-import com.aethercoder.dao.impl.AddressInfoDaoImpl;
-import com.aethercoder.dao.impl.BlockInfoDaoImpl;
-import com.aethercoder.dao.impl.TokenInfoDaoImpl;
-import com.aethercoder.dao.impl.TxInfoDaoImpl;
-import com.aethercoder.entity.AddressInfo;
+import com.aethercoder.dao.TokenInfoDao;
+import com.aethercoder.dao.TxInfoDao;
 import com.aethercoder.entity.BlockInfo;
 import com.aethercoder.entity.TokenInfo;
 import com.aethercoder.entity.TxInfo;
 import com.aethercoder.util.BeanUtils;
 import com.aethercoder.util.NetworkUtil;
 import com.aethercoder.util.QtumUtils;
-import com.aethercoder.vo.TokenTransfer;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +20,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Pattern;
-
-import static com.aethercoder.constants.Constants.QBE_SYMBOL;
 
 /**
  * Created by hepengfei on 23/01/2018.
@@ -50,19 +44,13 @@ public class QtumService {
     private String eventUrl;
 
     @Autowired
-    private BlockInfoDaoImpl blockInfoDaoImpl;
-
-    @Autowired
     private BlockInfoDao blockInfoDao;
 
     @Autowired
-    private TxInfoDaoImpl txInfoDaoImpl;
+    private TokenInfoDao tokenInfoDao;
 
     @Autowired
-    private AddressInfoDaoImpl addressInfoDaoImpl;
-
-    @Autowired
-    private TokenInfoDaoImpl tokenInfoDaoImpl;
+    private TxInfoDao txInfoDao;
 
     public Integer getBlockCount() throws Exception{
         List<Map<String, Object>> paramList = new ArrayList<>();
@@ -168,37 +156,44 @@ public class QtumService {
 
     public String getLatestBlockInfos(Integer limit, Integer offset) throws Exception{
 
-        List<Map> blockInfos = blockInfoDaoImpl.findByLatestBlockInfos(limit, offset);
+        List<BlockInfo> blockInfos = blockInfoDao.getBypage(limit, offset);
 
         return gson.toJson(blockInfos);
     }
 
     public String getBlockInfo(String blockHashOrBlockCount) throws Exception{
-        Map blockMap = null;
+        BlockInfo blockInfo = null;
         if(isInteger(blockHashOrBlockCount)){
-            blockMap = blockInfoDaoImpl.findByBlockHeight(Integer.valueOf(blockHashOrBlockCount));
+            blockInfo = blockInfoDao.getByBlockHeight(Integer.valueOf(blockHashOrBlockCount));
         }
         else{
-            blockMap = blockInfoDaoImpl.findByBlockHash(blockHashOrBlockCount);
+            blockInfo = blockInfoDao.getByBlockHash(blockHashOrBlockCount);
         }
 
-        return gson.toJson(blockMap);
+        return gson.toJson(blockInfo);
     }
 
     public String getAddressInfo(String address, Integer limit, Integer offset) throws Exception{
 
-        return addressInfoDaoImpl.getAddressInfo(address, limit, offset);
+        return gson.toJson(getAddressInfos(address));
     }
 
     public String getTransactionInfo(String txHash) throws Exception{
 
-        Map txMap = txInfoDaoImpl.getTxInfo(txHash);
+        List<TxInfo> txInfos = txInfoDao.getByTxId(txHash);
 
-        return gson.toJson(txMap);
+        return gson.toJson(txInfos);
     }
 
     public Map<String, TokenInfo> getTokenIndoMap(){
-        return tokenInfoDaoImpl.getTokenInfoMap();
+        List<TokenInfo> list = tokenInfoDao.getByIdNotNull();
+
+        Map<String, TokenInfo> resultMap = new HashMap<>();
+        for (TokenInfo tokenInfo: list) {
+            resultMap.put(tokenInfo.getContractAddress(), tokenInfo);
+        }
+
+        return resultMap;
     }
 
     public List<Integer> getHeightList(){
@@ -209,7 +204,7 @@ public class QtumService {
         Map tokens = new HashMap();
 
         try{
-            Map<String, TokenInfo>  tokenInfoMap = tokenInfoDaoImpl.getTokenInfoMap();
+            Map<String, TokenInfo>  tokenInfoMap = getTokenIndoMap();
 
             String param = QtumUtils.base58ToSha160(address);
             if (param.length() < 64) {
@@ -237,44 +232,92 @@ public class QtumService {
                     tokens.put(((TokenInfo)entry.getValue()).getSymbol(), value.divide(new BigDecimal(Math.pow(10, ((TokenInfo)entry.getValue()).getDecimal()))));
                 }
             }
-
         }
         catch (Exception e){
             e.printStackTrace();
         }
 
-
         return gson.toJson(tokens);
     }
 
+    public String getAddressUnSpent(String address){
+        String result = "";
+        List<Object> paramList = new ArrayList<>();
+
+        try{
+            List<String> addrList = new ArrayList<String>();
+            addrList.add(address);
+            callQtumService("importaddress", addrList);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        try{
+            List list = (List)callQtumService("listaddressgroupings", paramList);
+
+            for (Object object: list) {
+                List list1 = (List)object;
+
+                for (int i = 0 ;i< list1.size() ; i++){
+                    if(((List)list1.get(i)).get(0).equals(address))
+                    {
+                        result = ((List)list1.get(i)).get(1).toString();
+                    }
+                }
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
     public String queryByParam(String param){
-        Map map = new HashMap();
         if (isInteger(param)){
-            map = blockInfoDaoImpl.findByBlockHeight(Integer.valueOf(param));
-            return gson.toJson(map);
+            return gson.toJson(blockInfoDao.getByBlockHeight(Integer.valueOf(param)));
         }
 
         int paramLength = param.length();
         if(paramLength == 64){
             //参数长度为64为区块hash或者交易Hash
-            map = blockInfoDaoImpl.findByBlockHash(param);
-            if(map == null || map.size() == 0){
-                map = txInfoDaoImpl.getTxInfo(param);
+            BlockInfo blockInfo = blockInfoDao.getByBlockHash(param);
+            if(blockInfo == null){
+                return gson.toJson(txInfoDao.getByTxId(param));
             }
+            else {
+                return gson.toJson(blockInfo);
+            }
+
         }
         else if(paramLength == 40 || paramLength == 34){
             //参数长度为40为合约地址---参数长度为35为账户地址
-            return addressInfoDaoImpl.getAddressInfo(param,10,0);
+            return gson.toJson(getAddressInfos(param));
         }
 
-        return gson.toJson(map);
+        return "";
+    }
+
+    public String getAddressInfos(String address){
+        Map resultMap = new HashMap();
+
+        List<TxInfo> txInfos = txInfoDao.getTxInfos(address,10,0);
+        String value = getAddressUnSpent(address);
+
+
+        resultMap.put("txInfos", txInfos);
+        resultMap.put("QBE", value);
+        resultMap.put("tokens", getTokenBalance(address));
+
+        return gson.toJson(resultMap);
     }
 
     public String getBlockAndTx(){
         Map resultMap = new HashMap();
 
-        List<Map>  blockInfos = blockInfoDaoImpl.findByLatestBlockInfos(10, 0);
-        List<Map> txInfos = txInfoDaoImpl.findByLatestTxInfos(20, 0);
+        List<BlockInfo>  blockInfos = blockInfoDao.getBypage(10, 0);
+        List<TxInfo> txInfos = txInfoDao.getByPage(20, 0);
 
         resultMap.put("blockHeight", blockInfoDao.findMaxBlockHeight());
         resultMap.put("blocks", blockInfos);

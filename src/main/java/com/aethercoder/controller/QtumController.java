@@ -57,6 +57,5 @@ public class QtumController {
         logger.info("/queryByParam");
 
         return qtumService.queryByParam(param);
-//        return qtumService.getBlockAndTx();
     }
 }
