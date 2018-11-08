@@ -302,7 +302,7 @@ public class QtumService {
     public String getAddressInfos(String address){
         Map resultMap = new HashMap();
 
-        List<TxInfo> txInfos = txInfoDao.getTxInfos(address,10,0);
+        List<TxInfo> txInfos = txInfoDao.getTxInfos(address,0,10);
         String value = getAddressUnSpent(address);
 
 
@@ -316,8 +316,8 @@ public class QtumService {
     public String getBlockAndTx(){
         Map resultMap = new HashMap();
 
-        List<BlockInfo>  blockInfos = blockInfoDao.getBypage(10, 0);
-        List<TxInfo> txInfos = txInfoDao.getByPage(20, 0);
+        List<BlockInfo>  blockInfos = blockInfoDao.getBypage(0, 10);
+        List<TxInfo> txInfos = txInfoDao.getByPage(0, 20);
 
         resultMap.put("blockHeight", blockInfoDao.findMaxBlockHeight());
         resultMap.put("blocks", blockInfos);
