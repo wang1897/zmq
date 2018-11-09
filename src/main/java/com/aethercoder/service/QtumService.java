@@ -196,8 +196,8 @@ public class QtumService {
         return resultMap;
     }
 
-    public List<Integer> getHeightList(){
-        return blockInfoDao.getAllBlockHeightFromDB();
+    public List<Integer> getHeightList(Integer minBlockHeight){
+        return blockInfoDao.getAllBlockHeightFromDB(minBlockHeight);
     }
 
     public String getTokenBalance(String address){

@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -27,6 +30,8 @@ public class QueueSubService implements Runnable {
 
     @Value("${qtum.zmq}")
     private String zmqUrl;
+
+    public static volatile boolean isThreadOver = true;
 
     private BlockingDeque<String> blockingDeque;
 
@@ -58,8 +63,8 @@ public class QueueSubService implements Runnable {
 
                 //同步丢失的区块,启动初始或者每同步处理1000个区块，启动单个线程去检查是否存在缺失的区块
                 blocks++;
-                if (blocks % 1000 == 0){
-                    executor.execute(new SynBlockService(qtumService, blockingDeque, (Integer) blockDetail.get("height")));
+                if (blocks % 1000 == 0 && isThreadOver){
+                    executor.execute(new SynBlockService(qtumService, blockingDeque));
                 }
 
                 logger.info("QueueSubService remaining block size: " + blockingDeque.size());
