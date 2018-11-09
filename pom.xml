@@ -25,14 +25,9 @@
 
     <repositories>
         <repository>
-            <id>aliyun-nexus</id>
+            <id>nexus</id>
             <name>Nexus</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-        </repository>
-        <repository>
-            <id>jitpack</id>
-            <name>jitpack</name>
-            <url>https://jitpack.io</url>
+            <url>http://101.132.157.32:8081/repository/maven-public/</url>
         </repository>
     </repositories>
 
