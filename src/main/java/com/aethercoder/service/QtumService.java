@@ -14,8 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -154,11 +159,22 @@ public class QtumService {
         return pattern.matcher(str).matches();
     }
 
-    public String getLatestBlockInfos(Integer limit, Integer offset) throws Exception{
+    public String getLatestBlockInfos(Integer size, Integer page) {
+        Map resultMap = new HashMap();
 
-        List<BlockInfo> blockInfos = blockInfoDao.getBypage(limit, offset);
+        Page<BlockInfo> blockInfosPage = getBlockInfosByPage(size, page);
 
-        return gson.toJson(blockInfos);
+        resultMap.put("blockInfos", blockInfosPage.getContent() == null ? new ArrayList<>() : blockInfosPage.getContent());
+        resultMap.put("totalNumber", blockInfosPage.getTotalElements());
+
+        return gson.toJson(resultMap);
+    }
+
+    public Page<BlockInfo> getBlockInfosByPage(Integer size, Integer page){
+        Pageable pageable = new PageRequest(page, size, new Sort(Sort.Direction.DESC, "block_height"));
+        Page<BlockInfo> blockInfosPage = blockInfoDao.getAll(pageable);
+
+        return blockInfosPage;
     }
 
     public String getBlockInfo(String blockHashOrBlockCount) throws Exception{
@@ -171,11 +187,6 @@ public class QtumService {
         }
 
         return gson.toJson(blockInfo);
-    }
-
-    public String getAddressInfo(String address, Integer limit, Integer offset) throws Exception{
-
-        return gson.toJson(getAddressInfos(address));
     }
 
     public String getTransactionInfo(String txHash) throws Exception{
@@ -293,22 +304,23 @@ public class QtumService {
         }
         else if(paramLength == 40 || paramLength == 34){
             //参数长度为40为合约地址---参数长度为35为账户地址
-            return gson.toJson(getAddressInfos(param));
+            return gson.toJson(getAddressInfos(param, 10, 0));
         }
 
         return "";
     }
 
-    public String getAddressInfos(String address){
+    public String getAddressInfos(String address, Integer size, Integer page){
         Map resultMap = new HashMap();
 
-        List<TxInfo> txInfos = txInfoDao.getTxInfos(address,0,10);
-        String value = getAddressUnSpent(address);
-
+        Pageable pageable = new PageRequest(page, size, new Sort(Sort.Direction.DESC, "block_height"));
+        Page<TxInfo> txInfosPage = txInfoDao.getTxInfos(address, pageable);
+        List<TxInfo> txInfos = txInfosPage.getContent() == null ? new ArrayList<>() : txInfosPage.getContent();
 
         resultMap.put("txInfos", txInfos);
-        resultMap.put("QBE", value);
+        resultMap.put("QBE", getAddressUnSpent(address));
         resultMap.put("tokens", getTokenBalance(address));
+        resultMap.put("totalNumber", txInfosPage.getTotalElements());
 
         return gson.toJson(resultMap);
     }
@@ -316,8 +328,14 @@ public class QtumService {
     public String getBlockAndTx(){
         Map resultMap = new HashMap();
 
-        List<BlockInfo>  blockInfos = blockInfoDao.getBypage(0, 10);
-        List<TxInfo> txInfos = txInfoDao.getByPage(0, 20);
+        // 获取最新的区块信息（10个区块）
+        Page<BlockInfo> blockInfosPage = getBlockInfosByPage(10, 0);
+        List<BlockInfo>  blockInfos = blockInfosPage.getContent() == null ? new ArrayList<>() : blockInfosPage.getContent();
+
+        // 获取最新的交易信息（20个区块）
+        Pageable pageable = new PageRequest(0, 20, new Sort(Sort.Direction.DESC, "time"));
+        Page<TxInfo> txInfosPage = txInfoDao.getByPage(pageable);
+        List<TxInfo> txInfos = txInfosPage.getContent() == null ? new ArrayList<>() : txInfosPage.getContent();
 
         resultMap.put("blockHeight", blockInfoDao.findMaxBlockHeight());
         resultMap.put("blocks", blockInfos);

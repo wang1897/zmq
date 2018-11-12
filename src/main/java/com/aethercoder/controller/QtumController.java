@@ -35,7 +35,7 @@ public class QtumController {
     public String getAddressInfo(@RequestParam String address, @PathVariable("limit") Integer limit, @PathVariable("offset") Integer offset) throws Exception {
         logger.info("/addressInfo");
 
-        return qtumService.getAddressInfo(address, limit, offset);
+        return qtumService.getAddressInfos(address, limit, offset);
     }
 
     @RequestMapping( value = "/transactionInfo", method = RequestMethod.GET)

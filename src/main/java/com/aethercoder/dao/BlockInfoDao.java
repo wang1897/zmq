@@ -1,6 +1,9 @@
 package com.aethercoder.dao;
 
 import com.aethercoder.entity.BlockInfo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,8 +23,8 @@ public interface BlockInfoDao extends JpaRepository<BlockInfo, Long>{
     @Query(value = "select block_height from t_block_info where block_height >= :blockHeight ORDER BY block_height asc", nativeQuery = true)
     List<Integer> getAllBlockHeightFromDB(@Param("blockHeight") Integer blockHeight);
 
-    @Query(value = "select * from t_block_info order by block_height desc LIMIT :limit, :offset",nativeQuery = true)
-    List<BlockInfo> getBypage(@Param("limit") Integer limit, @Param("offset") Integer offset);
+    @Query(value = "SELECT * FROM t_block_info b order by ?#{#pageable}",countQuery = "SELECT count(*) FROM t_block_info",nativeQuery = true)
+    Page<BlockInfo> getAll(Pageable pageable);
 
     BlockInfo getByBlockHash(String blockHash);
 
