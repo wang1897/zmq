@@ -1,0 +1,130 @@
+package com.github.ontio.utils;
+
+
+import org.apache.poi.hssf.usermodel.*;
+
+import java.io.*;
+import java.util.List;
+import java.util.Map;
+
+public class FileUtil {
+
+    /**
+     * 判断文件是否存在.
+     * @param fileDir  文件路径
+     * @return
+     */
+    public static boolean fileExist(String fileDir){
+        boolean flag = false;
+        File file = new File(fileDir);
+        flag = file.exists();
+        return flag;
+    }
+
+    /**
+     * 创建新excel.
+     * @param fileDir  excel的路径
+     * @param sheetName 要创建的表格索引
+     * @param titleRow excel的第一行即表格头
+     */
+    public static void createExcel(String fileDir, String[] sheetName, List<List<String>> titleRow, List<List<Map>> mapList) throws Exception{
+        if (fileExist(fileDir)){
+            return;
+        }
+
+        FileOutputStream out = null;
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        try {
+            for (int i = 0; i < sheetName.length; i++){
+                // 生成sheet
+                HSSFSheet sheet = workbook.createSheet(sheetName[i]);
+
+                createExcelBySheet(workbook, sheet, titleRow.get(i), mapList.get(i));
+            }
+
+            out = new FileOutputStream(fileDir);
+            workbook.write(out);
+        } catch (Exception e) {
+            throw e;
+        }finally {
+            try {
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void createExcelBySheet(HSSFWorkbook wb, HSSFSheet sheet, List<String> titleRow, List<Map> mapList) throws Exception{
+        HSSFCellStyle style = setCellStyle(wb);
+
+        // 添加表头
+        HSSFRow row = sheet.createRow(0);
+        for(short i = 0; i < titleRow.size(); i++){
+            HSSFCell cell = row.createCell(i);
+            cell.setCellValue(titleRow.get(i));
+            cell.setCellStyle(style);
+
+            // 设置列宽:第一个参数代表列id(从0开始),第2个参数代表宽度值  参考 ："2012-08-10"的宽度为2500
+            sheet.setColumnWidth(i, 3766);
+        }
+
+        // 填写内容
+        for(int rowId = 0; rowId < mapList.size(); rowId++){
+            Map map = mapList.get(rowId);
+            HSSFRow newRow = sheet.createRow(rowId + 1);
+            for (short columnIndex = 0; columnIndex < titleRow.size(); columnIndex++) {
+                String mapKey = titleRow.get(columnIndex).trim();
+
+                HSSFCell cell = newRow.createCell(columnIndex);
+                cell.setCellValue(map.get(mapKey) == null ? null : map.get(mapKey).toString());
+                cell.setCellStyle(style);
+            }
+        }
+    }
+
+    /**
+     * 删除文件.
+     * @param fileDir  文件路径
+     */
+    public static boolean deleteExcel(String fileDir) {
+        boolean flag = false;
+        File file = new File(fileDir);
+        // 判断目录或文件是否存在
+        if (!file.exists()) {  // 不存在返回 false
+            return flag;
+        } else {
+            // 判断是否为文件
+            if (file.isFile()) {  // 为文件时调用删除文件方法
+                file.delete();
+                flag = true;
+            }
+        }
+
+        return flag;
+    }
+
+    private static HSSFCellStyle setCellStyle(HSSFWorkbook wb){
+        HSSFCellStyle cellStyle = wb.createCellStyle();
+
+        // 设置边框:
+        cellStyle.setBorderBottom(HSSFCellStyle.BORDER_THIN); //下边框
+        cellStyle.setBorderLeft(HSSFCellStyle.BORDER_THIN);//左边框
+        cellStyle.setBorderTop(HSSFCellStyle.BORDER_THIN);//上边框
+        cellStyle.setBorderRight(HSSFCellStyle.BORDER_THIN);//右边框
+
+        // 设置居中:
+        cellStyle.setAlignment(HSSFCellStyle.ALIGN_CENTER); // 居中
+
+        // 设置字体:
+        HSSFFont font = wb.createFont();
+        font.setFontName("宋体");
+        font.setFontHeightInPoints((short) 12);//设置字体大小
+        cellStyle.setFont(font);//选择需要用到的字体格式
+
+        // 设置自动换行:
+//        cellStyle.setWrapText(true);//设置自动换行
+
+        return cellStyle;
+    }
+}
